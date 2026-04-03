@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Challenge"/>
+  <meta name="theme-color" content="#0a0a14"/>
+  <title>Fitness Challenge</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0a14;
+      --surface: #13131f;
+      --surface2: #1c1c2e;
+      --border: #252535;
+      --accent: #ff6b35;
+      --accent2: #f7c59f;
+      --text: #f0ede6;
+      --muted: #666680;
+      --success: #4ade80;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --radius: 16px;
+      --font-display: 'DM Serif Display', Georgia, serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      min-height: 100vh; min-height: 100dvh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      overflow-x: hidden;
+    }
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255,107,53,0.07), transparent);
+      pointer-events: none; z-index: 0;
+    }
+
+```
+/* ── LAYOUT ── */
+#app { position: relative; z-index: 1; }
+
+.screen { display: none; flex-direction: column; min-height: 100dvh; }
+.screen.active { display: flex; }
+
+/* ── NAV BAR ── */
+.navbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 52px 20px 16px;
+  position: sticky; top: 0;
+  background: linear-gradient(to bottom, var(--bg) 70%, transparent);
+  z-index: 10;
+}
+.navbar-title { font-family: var(--font-display); font-size: 20px; }
+.nav-tabs {
+  display: flex; gap: 4px;
+  background: var(--surface); border-radius: 40px; padding: 4px;
+}
+.nav-tab {
+  background: transparent; border: none; color: var(--muted);
+  padding: 6px 14px; border-radius: 40px; cursor: pointer;
+  font-family: var(--font-body); font-size: 13px; font-weight: 500;
+  transition: all 0.2s;
+}
+.nav-tab.active { background: var(--accent); color: #fff; }
+.icon-btn {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); width: 38px; height: 38px; border-radius: 50%;
+  cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s;
+}
+.icon-btn:hover { background: var(--surface2); }
+
+/* ── SCROLL CONTENT ── */
+.scroll-content { flex: 1; overflow-y: auto; padding: 0 20px 100px; }
+
+/* ── CHALLENGE HEADER ── */
+.challenge-header { text-align: center; padding: 8px 0 24px; }
+.challenge-name {
+  font-family: var(--font-display); font-size: 28px;
+  line-height: 1.2; margin-bottom: 4px;
+}
+.challenge-period { font-size: 12px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+
+/* ── STATUS BADGE ── */
+.status-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px; border-radius: 40px; font-size: 12px; font-weight: 500;
+  margin: 10px auto 0; letter-spacing: 0.5px;
+}
+.status-badge.ahead { background: rgba(74,222,128,0.15); color: var(--success); border: 1px solid rgba(74,222,128,0.2); }
+.status-badge.ontrack { background: rgba(251,191,36,0.15); color: var(--warning); border: 1px solid rgba(251,191,36,0.2); }
+.status-badge.behind { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.2); }
+.status-badge.done { background: rgba(255,107,53,0.15); color: var(--accent); border: 1px solid rgba(255,107,53,0.2); }
+
+/* ── RING ── */
+.ring-wrap { position: relative; width: 190px; height: 190px; margin: 0 auto 28px; }
+.ring-wrap svg { display: block; }
+#progress-ring { transition: stroke-dashoffset 0.9s cubic-bezier(.4,0,.2,1); }
+.ring-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.ring-big { font-family: var(--font-display); font-size: 50px; line-height: 1; }
+.ring-label { font-size: 11px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
+.ring-sub { font-size: 13px; color: var(--accent); margin-top: 4px; }
+
+/* ── INPUT SECTION ── */
+.input-section { margin-bottom: 20px; }
+.input-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.input-row { display: flex; gap: 10px; }
+.main-input {
+  flex: 1; background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: var(--radius); color: var(--text); font-size: 20px;
+  padding: 14px 18px; font-family: var(--font-body); outline: none;
+  transition: border-color 0.2s;
+}
+.main-input:focus { border-color: var(--accent); }
+.main-input::placeholder { color: var(--muted); }
+.add-btn {
+  background: var(--accent); border: none; border-radius: var(--radius);
+  color: #fff; font-size: 26px; width: 58px; cursor: pointer;
+  font-weight: 300; transition: transform 0.1s, background 0.2s;
+}
+.add-btn:active { transform: scale(0.94); }
+.today-hint { font-size: 13px; color: var(--muted); margin-top: 8px; text-align: center; }
+.today-hint strong { color: var(--accent2); }
+
+/* ── STREAK + QUICK STATS ── */
+.streak-bar {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 18px;
+  display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+}
+.streak-fire { font-size: 28px; }
+.streak-info { flex: 1; }
+.streak-num { font-family: var(--font-display); font-size: 22px; color: var(--accent2); }
+.streak-text { font-size: 12px; color: var(--muted); }
+.streak-best { font-size: 12px; color: var(--muted); text-align: right; }
+
+.quick-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.stat-val { font-family: var(--font-display); font-size: 24px; color: var(--accent2); }
+.stat-key { font-size: 10px; color: var(--muted); text-align: center; letter-spacing: 0.5px; text-transform: uppercase; }
+
+/* ── GOAL DONE ── */
+.goal-done-banner {
+  background: linear-gradient(135deg, rgba(255,107,53,0.2), rgba(247,197,159,0.1));
+  border: 1px solid rgba(255,107,53,0.3);
+  border-radius: var(--radius); padding: 20px; text-align: center; margin-bottom: 20px;
+}
+.goal-done-banner .trophy { font-size: 40px; margin-bottom: 8px; }
+.goal-done-banner h3 { font-family: var(--font-display); font-size: 22px; margin-bottom: 4px; }
+.goal-done-banner p { font-size: 13px; color: var(--muted); }
+
+/* ── STATS PAGE ── */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+.big-stat {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+}
+.big-val { font-family: var(--font-display); font-size: 30px; color: var(--accent); display: block; }
+.big-key { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; display: block; }
+
+.section-title { font-family: var(--font-display); font-size: 20px; margin-bottom: 14px; }
+
+/* Log entries */
+.log-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+.log-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px 14px;
+}
+.log-date { font-size: 13px; color: var(--muted); width: 40px; flex-shrink: 0; }
+.log-bar-wrap { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.log-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 3px; }
+.log-count { font-size: 15px; color: var(--accent2); font-weight: 500; width: 36px; text-align: right; flex-shrink: 0; }
+.log-actions { display: flex; gap: 4px; }
+.log-edit-btn, .log-del-btn {
+  background: transparent; border: 1px solid var(--border); color: var(--muted);
+  width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.log-edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+.log-del-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+/* ── SETTINGS PAGE ── */
+.settings-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+.settings-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--border); cursor: pointer;
+  transition: background 0.15s;
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row:hover { background: var(--surface2); }
+.settings-row-label { font-size: 14px; }
+.settings-row-value { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.settings-chevron { font-size: 11px; color: var(--muted); }
+
+.challenge-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.challenge-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px; cursor: pointer;
+  transition: border-color 0.2s;
+}
+.challenge-item.selected { border-color: var(--accent); }
+.challenge-item-icon { font-size: 24px; }
+.challenge-item-info { flex: 1; }
+.challenge-item-name { font-size: 15px; font-weight: 500; }
+.challenge-item-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.challenge-item-progress { font-size: 13px; color: var(--accent2); }
+
+.danger-zone { margin-top: 8px; }
+.danger-btn {
+  width: 100%; background: transparent; border: 1px solid rgba(248,113,113,0.3);
+  color: var(--danger); padding: 12px; border-radius: var(--radius);
+  font-family: var(--font-body); font-size: 14px; cursor: pointer;
+  transition: background 0.2s;
+}
+.danger-btn:hover { background: rgba(248,113,113,0.1); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px); z-index: 100;
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 24px 24px 0 0; padding: 28px 24px 40px;
+  width: 100%; max-width: 480px;
+  transform: translateY(20px); transition: transform 0.25s;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-family: var(--font-display); font-size: 22px; margin-bottom: 20px; }
+.form-field { margin-bottom: 16px; }
+.form-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; display: block; }
+.form-input {
+  width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 12px; color: var(--text); font-size: 16px;
+  padding: 12px 14px; font-family: var(--font-body); outline: none;
+  transition: border-color 0.2s;
+}
+.form-input:focus { border-color: var(--accent); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.emoji-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 8px; }
+.emoji-opt {
+  aspect-ratio: 1; background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.emoji-opt.selected { border-color: var(--accent); background: rgba(255,107,53,0.15); }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.btn-primary {
+  flex: 1; background: var(--accent); border: none; border-radius: var(--radius);
+  color: #fff; padding: 14px; font-family: var(--font-body); font-size: 15px;
+  font-weight: 500; cursor: pointer; transition: opacity 0.2s;
+}
+.btn-primary:hover { opacity: 0.9; }
+.btn-secondary {
+  flex: 0 0 auto; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text); padding: 14px 18px;
+  font-family: var(--font-body); font-size: 15px; cursor: pointer;
+}
+
+/* ── ONBOARDING ── */
+#onboarding {
+  position: fixed; inset: 0; background: var(--bg); z-index: 200;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 32px 28px; text-align: center;
+}
+#onboarding.hidden { display: none; }
+.onboard-icon { font-size: 64px; margin-bottom: 20px; }
+.onboard-title { font-family: var(--font-display); font-size: 32px; margin-bottom: 12px; line-height: 1.2; }
+.onboard-sub { font-size: 15px; color: var(--muted); line-height: 1.6; margin-bottom: 32px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 36px; left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 10px 22px; border-radius: 40px;
+  font-size: 14px; z-index: 300;
+  opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(to top, var(--bg) 80%, transparent);
+  padding: 12px 20px 32px;
+  display: flex; justify-content: center; gap: 8px; z-index: 10;
+}
+.bottom-btn {
+  flex: 1; max-width: 110px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 40px; color: var(--muted); padding: 10px 6px;
+  cursor: pointer; font-family: var(--font-body); font-size: 12px;
+  font-weight: 500; transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.bottom-btn .btn-icon { font-size: 18px; }
+.bottom-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.empty-state { text-align: center; padding: 32px 0; color: var(--muted); font-size: 14px; }
+.export-btn {
+  width: 100%; background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); padding: 13px; border-radius: var(--radius);
+  font-family: var(--font-body); font-size: 14px; cursor: pointer;
+  margin-bottom: 10px; transition: background 0.2s;
+}
+.export-btn:hover { background: var(--surface2); }
+```
+
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ONBOARDING -->
+
+  <div id="onboarding" class="hidden">
+    <div class="onboard-icon">💪</div>
+    <h1 class="onboard-title">Willkommen bei<br>Fitness Challenge</h1>
+    <p class="onboard-sub">Setze dir ein Ziel, tracke deinen Fortschritt und bleibe motiviert — Monat für Monat.</p>
+    <button class="btn-primary" style="width:100%;max-width:320px" onclick="startOnboarding()">Erste Challenge erstellen →</button>
+  </div>
+
+  <!-- HOME SCREEN -->
+
+  <div id="screen-home" class="screen active">
+    <div class="navbar">
+      <div class="navbar-title" id="home-nav-title">Challenge</div>
+      <button class="icon-btn" onclick="openNewEntryModal()" title="Eintrag hinzufügen">＋</button>
+    </div>
+    <div class="scroll-content" id="home-content">
+      <!-- dynamisch -->
+    </div>
+  </div>
+
+  <!-- STATS SCREEN -->
+
+  <div id="screen-stats" class="screen">
+    <div class="navbar">
+      <div class="navbar-title">Statistiken</div>
+    </div>
+    <div class="scroll-content" id="stats-content"></div>
+  </div>
+
+  <!-- SETTINGS SCREEN -->
+
+  <div id="screen-settings" class="screen">
+    <div class="navbar">
+      <div class="navbar-title">Einstellungen</div>
+    </div>
+    <div class="scroll-content" id="settings-content"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+
+  <nav class="bottom-nav">
+    <button class="bottom-btn active" id="nav-home" onclick="switchScreen('home')">
+      <span class="btn-icon">💪</span>Today
+    </button>
+    <button class="bottom-btn" id="nav-stats" onclick="switchScreen('stats')">
+      <span class="btn-icon">📊</span>Stats
+    </button>
+    <button class="bottom-btn" id="nav-settings" onclick="switchScreen('settings')">
+      <span class="btn-icon">⚙️</span>Settings
+    </button>
+  </nav>
+</div>
+
+<!-- MODAL: New Entry / Edit -->
+
+<div class="modal-overlay" id="entry-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="entry-modal-title">Eintrag hinzufügen</h2>
+    <div class="form-field">
+      <label class="form-label">Anzahl</label>
+      <input class="form-input" id="entry-count" type="number" min="1" placeholder="z.B. 50"
+        onkeydown="if(event.key==='Enter') saveEntry()"/>
+    </div>
+    <div class="form-field">
+      <label class="form-label">Datum</label>
+      <input class="form-input" id="entry-date" type="date"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('entry-modal')">Abbrechen</button>
+      <button class="btn-primary" onclick="saveEntry()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Challenge Editor -->
+
+<div class="modal-overlay" id="challenge-modal">
+  <div class="modal" style="max-height:90dvh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="challenge-modal-title">Neue Challenge</h2>
+    <input type="hidden" id="challenge-edit-id"/>
+    <div class="form-field">
+      <label class="form-label">Name der Challenge</label>
+      <input class="form-input" id="ch-name" type="text" placeholder="z.B. April Liegestütze"/>
+    </div>
+    <div class="form-field">
+      <label class="form-label">Emoji</label>
+      <div class="emoji-grid" id="emoji-grid"></div>
+    </div>
+    <div class="form-field">
+      <label class="form-label">Übungseinheit (singular)</label>
+      <input class="form-input" id="ch-unit" type="text" placeholder="z.B. Liegestütze"/>
+    </div>
+    <div class="form-field">
+      <label class="form-label">Ziel gesamt</label>
+      <input class="form-input" id="ch-goal" type="number" min="1" placeholder="z.B. 1000"/>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label">Startdatum</label>
+        <input class="form-input" id="ch-start" type="date"/>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Enddatum</label>
+        <input class="form-input" id="ch-end" type="date"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('challenge-modal')">Abbrechen</button>
+      <button class="btn-primary" onclick="saveChallenge()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA LAYER
+// ═══════════════════════════════════════════════
+const STORAGE_KEY = 'fitness_challenges_v2';
+const EMOJIS = ['💪','🏋️','🧘','🏃','🚴','🏊','🤸','⚡','🔥','🎯','🌟','🦾','🥊','⛹️','🧗','🏇'];
+
+function loadStore() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { challenges: [], activeChallengeId: null, onboarded: false };
+}
+
+function saveStore() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+}
+
+let store = loadStore();
+let editingEntryDate = null; // for edit mode
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function formatDate(str) {
+  if (!str) return '';
+  const [y, m, d] = str.split('-');
+  return `${d}.${m}.${y}`;
+}
+
+function monthName(str) {
+  if (!str) return '';
+  const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  return months[parseInt(str.split('-')[1]) - 1];
+}
+
+function getActiveChallenge() {
+  return store.challenges.find(c => c.id === store.activeChallengeId) || store.challenges[0] || null;
+}
+
+function getDaysLeft(challenge) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(challenge.endDate); end.setHours(0,0,0,0);
+  const diff = Math.ceil((end - today) / 86400000);
+  return Math.max(0, diff + 1);
+}
+
+function getTotalDays(challenge) {
+  const start = new Date(challenge.startDate);
+  const end = new Date(challenge.endDate);
+  return Math.ceil((end - start) / 86400000) + 1;
+}
+
+function getDaysPassed(challenge) {
+  const start = new Date(challenge.startDate); start.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.floor((today - start) / 86400000);
+  return Math.max(0, Math.min(diff + 1, getTotalDays(challenge)));
+}
+
+function getTotal(challenge) {
+  return (challenge.entries || []).reduce((s, e) => s + e.count, 0);
+}
+
+function getAvg(challenge) {
+  const e = challenge.entries || [];
+  if (!e.length) return 0;
+  return Math.round(getTotal(challenge) / e.length);
+}
+
+function getStreak(challenge) {
+  const entries = challenge.entries || [];
+  if (!entries.length) return { current: 0, best: 0 };
+  const dateSet = new Set(entries.map(e => e.date));
+  const today = todayStr();
+  let current = 0;
+  let d = new Date(today);
+  while (dateSet.has(d.toISOString().split('T')[0])) {
+    current++;
+    d.setDate(d.getDate() - 1);
+  }
+  // best streak
+  const sorted = [...dateSet].sort();
+  let best = 0, run = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i-1]); prev.setDate(prev.getDate()+1);
+    if (prev.toISOString().split('T')[0] === sorted[i]) { run++; best = Math.max(best, run); }
+    else run = 1;
+  }
+  best = Math.max(best, run, current);
+  return { current, best };
+}
+
+function getStatus(challenge) {
+  const total = getTotal(challenge);
+  const remaining = Math.max(0, challenge.goal - total);
+  if (remaining === 0) return 'done';
+  const daysPassed = getDaysPassed(challenge);
+  const totalDays = getTotalDays(challenge);
+  const expectedByNow = Math.round((daysPassed / totalDays) * challenge.goal);
+  if (total >= expectedByNow * 1.05) return 'ahead';
+  if (total >= expectedByNow * 0.9) return 'ontrack';
+  return 'behind';
+}
+
+function statusLabel(s) {
+  return { ahead: '🚀 Vor dem Plan', ontrack: '✅ Im Plan', behind: '⚠️ Hinter dem Plan', done: '🏆 Ziel erreicht!' }[s];
+}
+
+// ═══════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════
+function renderHome() {
+  const ch = getActiveChallenge();
+  const el = document.getElementById('home-content');
+
+  if (!ch) {
+    el.innerHTML = `
+      <div class="empty-state" style="padding-top:60px">
+        <div style="font-size:48px;margin-bottom:16px">🎯</div>
+        <p style="margin-bottom:20px">Noch keine Challenge.</p>
+        <button class="btn-primary" style="width:auto;padding:12px 28px" onclick="openChallengeModal()">Erste Challenge erstellen</button>
+      </div>`;
+    document.getElementById('home-nav-title').textContent = 'Challenge';
+    return;
+  }
+
+  const total = getTotal(ch);
+  const remaining = Math.max(0, ch.goal - total);
+  const progress = Math.min(1, total / ch.goal);
+  const daysLeft = getDaysLeft(ch);
+  const perDayNeeded = remaining === 0 ? 0 : Math.ceil(remaining / Math.max(1, daysLeft));
+  const avg = getAvg(ch);
+  const streak = getStreak(ch);
+  const status = getStatus(ch);
+  const today = todayStr();
+  const todayEntry = (ch.entries || []).find(e => e.date === today);
+  const CIRC = 2 * Math.PI * 85;
+
+  document.getElementById('home-nav-title').textContent = ch.name;
+
+  el.innerHTML = `
+    <div class="challenge-header">
+      <div class="challenge-name">${ch.icon} ${ch.name}</div>
+      <div class="challenge-period">${formatDate(ch.startDate)} – ${formatDate(ch.endDate)}</div>
+      <div class="status-badge ${status}">${statusLabel(status)}</div>
+    </div>
+
+    <div class="ring-wrap">
+      <svg width="190" height="190" style="transform:rotate(-90deg)">
+        <defs>
+          <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#ff6b35"/>
+            <stop offset="100%" stop-color="#f7c59f"/>
+          </linearGradient>
+        </defs>
+        <circle cx="95" cy="95" r="85" fill="none" stroke="#1c1c2e" stroke-width="13"/>
+        <circle id="progress-ring" cx="95" cy="95" r="85"
+          fill="none" stroke="url(#rg)" stroke-width="13"
+          stroke-linecap="round"
+          stroke-dasharray="${CIRC}"
+          stroke-dashoffset="${CIRC * (1 - progress)}"/>
+      </svg>
+      <div class="ring-center">
+        <span class="ring-big">${remaining}</span>
+        <span class="ring-label">verbleibend</span>
+        <span class="ring-sub">${total} / ${ch.goal} ${ch.unit}</span>
+      </div>
+    </div>
+
+    ${remaining > 0 ? `
+    <div class="input-section">
+      <div class="input-label">Heute eintragen</div>
+      <div class="input-row">
+        <input class="main-input" id="pushup-input" type="number" min="1"
+          placeholder="${ch.unit} heute …"
+          onkeydown="if(event.key==='Enter') quickAdd()"/>
+        <button class="add-btn" onclick="quickAdd()">＋</button>
+      </div>
+      ${todayEntry ? `<p class="today-hint">Heute bereits: <strong>${todayEntry.count} ${ch.unit}</strong></p>` : ''}
+    </div>` : `
+    <div class="goal-done-banner">
+      <div class="trophy">🏆</div>
+      <h3>Ziel erreicht!</h3>
+      <p>${total} ${ch.unit} — Respekt!</p>
+    </div>`}
+
+    <div class="streak-bar">
+      <span class="streak-fire">🔥</span>
+      <div class="streak-info">
+        <div class="streak-num">${streak.current} ${streak.current === 1 ? 'Tag' : 'Tage'}</div>
+        <div class="streak-text">Aktuelle Serie</div>
+      </div>
+      <div class="streak-best">Bestleistung<br><strong style="color:var(--accent2)">${streak.best} Tage</strong></div>
+    </div>
+
+    <div class="quick-stats">
+      <div class="stat-card">
+        <span class="stat-val">${daysLeft}</span>
+        <span class="stat-key">Tage noch</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-val">${perDayNeeded}</span>
+        <span class="stat-key">/ Tag nötig</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-val">${avg}</span>
+        <span class="stat-key">∅ / Tag</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderStats() {
+  const ch = getActiveChallenge();
+  const el = document.getElementById('stats-content');
+  if (!ch) { el.innerHTML = '<div class="empty-state">Keine Challenge aktiv.</div>'; return; }
+
+  const total = getTotal(ch);
+  const remaining = Math.max(0, ch.goal - total);
+  const progress = Math.min(1, total / ch.goal);
+  const daysLeft = getDaysLeft(ch);
+  const perDayNeeded = remaining === 0 ? 0 : Math.ceil(remaining / Math.max(1, daysLeft));
+  const avg = getAvg(ch);
+  const streak = getStreak(ch);
+  const entries = [...(ch.entries || [])].sort((a,b) => b.date.localeCompare(a.date));
+  const maxCount = entries.length ? Math.max(...entries.map(e => e.count)) : 1;
+
+  el.innerHTML = `
+    <div style="padding-top:4px">
+      <div class="challenge-header" style="margin-bottom:20px">
+        <div class="challenge-name">${ch.icon} ${ch.name}</div>
+      </div>
+      <div class="stats-grid">
+        <div class="big-stat"><span class="big-val">${total}</span><span class="big-key">${ch.unit} gesamt</span></div>
+        <div class="big-stat"><span class="big-val">${remaining}</span><span class="big-key">verbleibend</span></div>
+        <div class="big-stat"><span class="big-val">${avg}</span><span class="big-key">∅ pro Tag</span></div>
+        <div class="big-stat"><span class="big-val">${perDayNeeded}</span><span class="big-key">/ Tag (Rest)</span></div>
+        <div class="big-stat"><span class="big-val">${streak.current}🔥</span><span class="big-key">Aktuelle Serie</span></div>
+        <div class="big-stat"><span class="big-val">${Math.round(progress*100)}%</span><span class="big-key">Fortschritt</span></div>
+      </div>
+
+      <h3 class="section-title">Einträge</h3>
+      ${entries.length === 0 ? '<div class="empty-state">Noch keine Einträge.</div>' : `
+      <div class="log-list">
+        ${entries.map(e => `
+          <div class="log-row">
+            <span class="log-date">${e.date.slice(5).replace('-','.')}</span>
+            <div class="log-bar-wrap"><div class="log-bar-fill" style="width:${Math.round(e.count/maxCount*100)}%"></div></div>
+            <span class="log-count">${e.count}</span>
+            <div class="log-actions">
+              <button class="log-edit-btn" onclick="openEditEntry('${e.date}')" title="Bearbeiten">✏️</button>
+              <button class="log-del-btn" onclick="deleteEntry('${e.date}')" title="Löschen">🗑</button>
+            </div>
+          </div>`).join('')}
+      </div>`}
+    </div>
+  `;
+}
+
+function renderSettings() {
+  const ch = getActiveChallenge();
+  const el = document.getElementById('settings-content');
+
+  el.innerHTML = `
+    <div style="padding-top:4px">
+      <h3 class="section-title">Challenges</h3>
+      <div class="challenge-list">
+        ${store.challenges.map(c => {
+          const total = getTotal(c);
+          const pct = Math.round(Math.min(1, total / c.goal) * 100);
+          return `
+          <div class="challenge-item ${c.id === store.activeChallengeId ? 'selected' : ''}"
+            onclick="setActiveChallenge('${c.id}')">
+            <span class="challenge-item-icon">${c.icon}</span>
+            <div class="challenge-item-info">
+              <div class="challenge-item-name">${c.name}</div>
+              <div class="challenge-item-meta">${formatDate(c.startDate)} – ${formatDate(c.endDate)} · Ziel: ${c.goal}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+              <span class="challenge-item-progress">${pct}%</span>
+              <button onclick="event.stopPropagation();openChallengeModal('${c.id}')"
+                style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:3px 8px;font-size:12px;cursor:pointer">✏️ Edit</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <button class="btn-primary" style="width:100%;margin-bottom:28px" onclick="openChallengeModal()">＋ Neue Challenge</button>
+
+      <h3 class="section-title">Daten</h3>
+      <button class="export-btn" onclick="exportData()">📤 Daten exportieren (JSON)</button>
+
+      <div class="danger-zone">
+        <button class="danger-btn" onclick="resetActiveChallenge()">🗑 Einträge dieser Challenge löschen</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderAll() {
+  renderHome();
+  renderStats();
+  renderSettings();
+}
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+let currentScreen = 'home';
+
+function switchScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.bottom-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  currentScreen = name;
+  if (name === 'stats') renderStats();
+  if (name === 'settings') renderSettings();
+}
+
+// ═══════════════════════════════════════════════
+// ENTRY ACTIONS
+// ═══════════════════════════════════════════════
+function quickAdd() {
+  const input = document.getElementById('pushup-input');
+  if (!input) return;
+  const val = parseInt(input.value, 10);
+  if (!val || val <= 0) return;
+  const ch = getActiveChallenge();
+  if (!ch) return;
+  const today = todayStr();
+  if (!ch.entries) ch.entries = [];
+  const existing = ch.entries.find(e => e.date === today);
+  if (existing) existing.count += val;
+  else ch.entries.push({ date: today, count: val });
+  saveStore();
+  input.value = '';
+  renderHome();
+  showToast(`+${val} ${ch.unit} gespeichert ✓`);
+}
+
+function openNewEntryModal() {
+  editingEntryDate = null;
+  document.getElementById('entry-modal-title').textContent = 'Eintrag hinzufügen';
+  document.getElementById('entry-count').value = '';
+  document.getElementById('entry-date').value = todayStr();
+  openModal('entry-modal');
+  setTimeout(() => document.getElementById('entry-count').focus(), 300);
+}
+
+function openEditEntry(date) {
+  const ch = getActiveChallenge();
+  if (!ch) return;
+  const entry = (ch.entries || []).find(e => e.date === date);
+  if (!entry) return;
+  editingEntryDate = date;
+  document.getElementById('entry-modal-title').textContent = 'Eintrag bearbeiten';
+  document.getElementById('entry-count').value = entry.count;
+  document.getElementById('entry-date').value = date;
+  openModal('entry-modal');
+}
+
+function saveEntry() {
+  const count = parseInt(document.getElementById('entry-count').value, 10);
+  const date = document.getElementById('entry-date').value;
+  if (!count || count <= 0 || !date) { showToast('Bitte Anzahl und Datum eingeben'); return; }
+  const ch = getActiveChallenge();
+  if (!ch) return;
+  if (!ch.entries) ch.entries = [];
+
+  if (editingEntryDate) {
+    // Edit
+    const idx = ch.entries.findIndex(e => e.date === editingEntryDate);
+    if (idx > -1) {
+      if (date !== editingEntryDate) {
+        ch.entries.splice(idx, 1);
+        const ex = ch.entries.find(e => e.date === date);
+        if (ex) ex.count += count; else ch.entries.push({ date, count });
+      } else { ch.entries[idx].count = count; }
+    }
+  } else {
+    const ex = ch.entries.find(e => e.date === date);
+    if (ex) ex.count += count; else ch.entries.push({ date, count });
+  }
+
+  saveStore();
+  closeModal('entry-modal');
+  renderAll();
+  showToast('Gespeichert ✓');
+}
+
+function deleteEntry(date) {
+  if (!confirm(`Eintrag vom ${formatDate(date)} löschen?`)) return;
+  const ch = getActiveChallenge();
+  if (!ch) return;
+  ch.entries = (ch.entries || []).filter(e => e.date !== date);
+  saveStore();
+  renderStats();
+  showToast('Eintrag gelöscht');
+}
+
+// ═══════════════════════════════════════════════
+// CHALLENGE CRUD
+// ═══════════════════════════════════════════════
+let selectedEmoji = '💪';
+
+function openChallengeModal(id) {
+  const ch = id ? store.challenges.find(c => c.id === id) : null;
+  document.getElementById('challenge-modal-title').textContent = ch ? 'Challenge bearbeiten' : 'Neue Challenge';
+  document.getElementById('challenge-edit-id').value = ch ? ch.id : '';
+  document.getElementById('ch-name').value = ch ? ch.name : '';
+  document.getElementById('ch-unit').value = ch ? ch.unit : '';
+  document.getElementById('ch-goal').value = ch ? ch.goal : '';
+  document.getElementById('ch-start').value = ch ? ch.startDate : todayStr();
+  document.getElementById('ch-end').value = ch ? ch.endDate : '';
+  selectedEmoji = ch ? ch.icon : '💪';
+  renderEmojiGrid();
+  openModal('challenge-modal');
+}
+
+function renderEmojiGrid() {
+  document.getElementById('emoji-grid').innerHTML = EMOJIS.map(e =>
+    `<button class="emoji-opt ${e === selectedEmoji ? 'selected' : ''}"
+      onclick="selectEmoji('${e}')">${e}</button>`
+  ).join('');
+}
+
+function selectEmoji(e) {
+  selectedEmoji = e;
+  renderEmojiGrid();
+}
+
+function saveChallenge() {
+  const editId = document.getElementById('challenge-edit-id').value;
+  const name = document.getElementById('ch-name').value.trim();
+  const unit = document.getElementById('ch-unit').value.trim();
+  const goal = parseInt(document.getElementById('ch-goal').value, 10);
+  const startDate = document.getElementById('ch-start').value;
+  const endDate = document.getElementById('ch-end').value;
+  if (!name || !unit || !goal || !startDate || !endDate) { showToast('Bitte alle Felder ausfüllen'); return; }
+  if (startDate >= endDate) { showToast('Enddatum muss nach Startdatum liegen'); return; }
+
+  if (editId) {
+    const ch = store.challenges.find(c => c.id === editId);
+    if (ch) { ch.name = name; ch.icon = selectedEmoji; ch.unit = unit; ch.goal = goal; ch.startDate = startDate; ch.endDate = endDate; }
+  } else {
+    const newCh = { id: uid(), name, icon: selectedEmoji, unit, goal, startDate, endDate, entries: [] };
+    store.challenges.push(newCh);
+    store.activeChallengeId = newCh.id;
+  }
+
+  saveStore();
+  closeModal('challenge-modal');
+  renderAll();
+  showToast(editId ? 'Challenge aktualisiert ✓' : 'Challenge erstellt ✓');
+}
+
+function setActiveChallenge(id) {
+  store.activeChallengeId = id;
+  saveStore();
+  renderAll();
+  switchScreen('home');
+  showToast('Challenge gewechselt');
+}
+
+function resetActiveChallenge() {
+  const ch = getActiveChallenge();
+  if (!ch) return;
+  if (!confirm(`Alle Einträge von "${ch.name}" löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) return;
+  ch.entries = [];
+  saveStore();
+  renderAll();
+  showToast('Einträge gelöscht');
+}
+
+// ═══════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════
+function exportData() {
+  const blob = new Blob([JSON.stringify(store, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'fitness-challenge-backup.json'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Export gestartet');
+}
+
+// ═══════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
+});
+
+// ═══════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ═══════════════════════════════════════════════
+// ONBOARDING
+// ═══════════════════════════════════════════════
+function startOnboarding() {
+  document.getElementById('onboarding').classList.add('hidden');
+  store.onboarded = true;
+  saveStore();
+  openChallengeModal();
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+function init() {
+  // Migrate old data format
+  if (!store.challenges) { store = { challenges: [], activeChallengeId: null, onboarded: false }; }
+
+  // Check for old v1 data
+  try {
+    const old = localStorage.getItem('pushup_challenge_2025');
+    if (old && store.challenges.length === 0) {
+      const oldData = JSON.parse(old);
+      if (oldData.entries && oldData.entries.length > 0) {
+        const migrated = {
+          id: uid(), name: 'April Liegestütze', icon: '💪', unit: 'Liegestütze',
+          goal: 1000, startDate: '2025-04-01', endDate: '2025-04-30',
+          entries: oldData.entries
+        };
+        store.challenges.push(migrated);
+        store.activeChallengeId = migrated.id;
+        store.onboarded = true;
+        saveStore();
+        showToast('Alte Daten migriert ✓');
+      }
+    }
+  } catch {}
+
+  if (!store.onboarded && store.challenges.length === 0) {
+    document.getElementById('onboarding').classList.remove('hidden');
+  } else {
+    document.getElementById('onboarding').classList.add('hidden');
+  }
+
+  renderAll();
+}
+
+init();
+</script>
+
+</body>
+</html>
